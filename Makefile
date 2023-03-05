@@ -28,7 +28,13 @@ SRCS=main/main.cpp                                                             \
 	 main/tools/log/stream/LogStream.cpp                                       \
 	 main/tools/log/modifier/LogModifier.cpp 							 	   \
 	 main/tools/sys/sys.cpp                                                    \
-	 main/tools/str/str.cpp
+	 main/tools/str/str.cpp                                                    \
+	 main/context/config/VirtualServerParametrsBuolder.cpp                            \
+	 main/context/config/VirtualServerParametrs.cpp                                   \
+	 main/context/config/ServerConfig.cpp                                            \
+	 main/context/config/Location.cpp                                                 \
+	 main/tools/exceptions/FileException.cpp
+
 INCLUDE_DIRS=main
 EXE_NAME=webserv
 

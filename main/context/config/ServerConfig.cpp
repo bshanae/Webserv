@@ -1,64 +1,52 @@
-#include "ServerStorage.h"
+#include "ServerConfig.h"
 #include "VirtualServerParametrs.hpp"
 #include "VirtualServerParametrsBuolder.hpp"
 #include <string>
 #include <iostream>
 #include "tools/exceptions/FileException.hpp"
-void static Trim(std::string& out_line)
-{
-    size_t trimmed_end = out_line.find_first_of(";#");
-    if (trimmed_end != std::string::npos)
-        out_line.erase(trimmed_end);
-	trimmed_end = out_line.find_first_not_of("\n\t\r ");
-	out_line.erase(0, trimmed_end);
-	trimmed_end = out_line.find_last_not_of("\n\t\r ");
-    if (trimmed_end != std::string::npos)
-	{
-		out_line.erase(trimmed_end + 1);
-	}
-    
-}
+#include <fstream>
+void Trim(std::string& out_line);
 
-VirtualServerParametrsBuolder ServerStorage::parse_server(FILE*  file)
+VirtualServerParametrsBuolder ServerConfig::parse_server(std::ifstream &file)
 {
+    std::string str;
     VirtualServerParametrsBuolder server;
-    char bufer[1024];
-    while(fgets(bufer,1024,file)){
-        std::string str(bufer);
+    while(true ){
+        getline(file,str);
         Trim(str);
         if(str.size() == 0)
             continue;
-        if ( str == "}")
+        if ( str == "}" && ! server.temp_location.hasValue())
             return server;
-        server.parse_string(str,file);
+        server.parse_string(str);
     }
     return server;
 }
-ServerStorage::ServerStorage(const char * file_name)
+ServerConfig::ServerConfig(const char * file_name)
 {
-   
-    FILE*  file = std::fopen(file_name,"r");
-	if (!file){
+   std::ifstream file(file_name);
+    
+	if (!file.is_open()){
 		throw FileException("cant open file");
     }
-
-    while( ! std::feof(file))
+    std::string str;
+    while( ! file.eof())
     {
-        char bufer[1024];
-        fgets(bufer,1024,file);
-        std::string str(bufer);
+        getline(file,str);
         Trim(str);
-        if (str == "")
+        if (str.size() == 0)
             continue;
-        if ( str == "server {")
+        else if ( str == "server {")
             this->add_server(parse_server(file));
+        else
+            throw FileException("Unknown simbole");
     } 
 
 }
 
 
 
-void ServerStorage::add_server( VirtualServerParametrsBuolder serv){
+void ServerConfig::add_server( VirtualServerParametrsBuolder serv){
 
     VirtualServerParametrs temp = VirtualServerParametrs(serv);
     for(std::vector<VirtualServerParametrs>:: iterator i = servers.begin();i != servers.end(); i++)
@@ -70,11 +58,11 @@ void ServerStorage::add_server( VirtualServerParametrsBuolder serv){
     }
     servers.push_back(temp);
 }
-const std::vector< VirtualServerParametrs>& ServerStorage::get_servers() const {
+const std::vector< VirtualServerParametrs>& ServerConfig::get_servers() const {
     return servers;
 }
 
-void ServerStorage::print_par(){
+void ServerConfig::print_par(){
     for (std::vector<VirtualServerParametrs>::iterator i = servers.begin(); i != servers.end();i++)
     {
         std::cout << "server {\n" 

@@ -1,10 +1,10 @@
 #include "tools/exceptions/SocketException.h"
-#include "context/ServerStorage.h"
+#include "server/Server.h"
 #include "context/project/Project.h"
 #include "context/Context.h"
 #include "tools/log/log.h"
 #include "tools/sys/sys.h"
-
+#include "context/config/ServerConfig.h"
 Context buildContext()
 {
 	Config config;
@@ -16,8 +16,14 @@ Context buildContext()
 	return context;
 }
 
-int main()
+int main(int argv, char ** argc)
 {
+
+
+
+	ServerConfig f(argc[1]);
+	f.print_par();
+	return 0;
 	try
 	{
 		log::initialize();

@@ -11,75 +11,60 @@ bool is_all_digit(std::string str,std::string::iterator i)
     }
     return true;
 }
-void VirtualServerParametrsBuolder::parse_string(std::string &str,FILE*  file){
+void VirtualServerParametrsBuolder::parse_string(std::string &str){
     size_t i = str.find_first_of(' ');
+    std::string param;
     if (i == std::string::npos )
-    {
-        throw FileException("empty parametr");
-    }
+        param = "";
+    else
+        param = str.substr(i);
     std::string name = str.substr(0,i);
-    std::string param = str.substr(i);
+    
     size_t trimmed_end = param.find_first_not_of(" ");
     if (trimmed_end != std::string::npos)
         param.erase(0,trimmed_end);
-    if (name == "listen")
+    
+    if (temp_location.hasValue() &&  name == "uri")
+        temp_location->parse_url(param);
+    else if(temp_location.hasValue() &&  name ==  "path")
+        temp_location->parse_path(param);
+    else if(temp_location.hasValue() && name ==  "redirect")
+        temp_location->parse_redirect(param);
+    else if(temp_location.hasValue() && name ==  "limit_except")
+        temp_location->parse_limits(param);
+    else if(temp_location.hasValue() && name ==  "}")
     {
-        this->set_port_and_ip(param);
-        return;
-    }
-    else if (name == "server_name")
-    {
-        this->set_name(param);
-        return;
-    }
-    else if (name == "root")
-    {
-        this->set_root(param);
-        return;
-    }
-    else if (name == "index")
-    {
-        this->set_index(param);
-        return;
-    }
-    else if (name == "error_page")
-    {
-        this->set_err_page(param);
-        return;
-    }
-    else if (name == "client_max_body_size")
-    {
-        this->set_max_body_size(param);
-        return;
-    }
-    else if (name == "upload")
-    {
-        this->set_upload(param);
-        return;
-    }
-    else if (name == "cgi_path")
-    {
-        this->set_upload(param);
-        return;
-    }
-    else if (name == "location" && param == "{")
-    {
-        location temp;
-        temp.parse_file(file);
         for (std::vector<location>::iterator i = locations.begin(); i != locations.end(); i++)
         {
-            if (temp.uri == i->uri)
+            if (temp_location->uri == i->uri)
                 throw FileException("locatoin already exist");
         }
-        this->locations.push_back(temp);
-        return;
+        this->locations.push_back(temp_location.getValue());
+        temp_location.reset();
     }
-    throw FileException("unknown word");
-
-    
+    else if (name == "listen")
+        this->parse_port_and_ip(param);
+    else if (name == "server_name")
+        this->parse_name(param);
+    else if (name == "root")
+        this->parse_root(param);
+    else if (name == "index")
+        this->parse_index(param);
+    else if (name == "error_page")
+        this->parse_err_page(param);
+    else if (name == "client_max_body_size")
+        this->parse_max_body_size(param);
+    else if (name == "upload")
+        this->parse_upload(param);
+    else if (name == "cgi_path")
+        this->parse_upload(param);
+    else if (name == "location" && param == "{")
+        temp_location = location();
+    else 
+        throw FileException("unknown word");
 
 }
-std::string::iterator VirtualServerParametrsBuolder::set_init_ip(std::string str){
+std::string::iterator VirtualServerParametrsBuolder::parse_init_ip(std::string str){
     std::string::iterator i = str.begin();
     if (std::atoi(str.c_str()) > 256)
         throw FileException("wrong ip");
@@ -117,13 +102,13 @@ VirtualServerParametrsBuolder::VirtualServerParametrsBuolder():
     ip_adress("0.0.0.0")
 {}
 
-void VirtualServerParametrsBuolder::set_port_and_ip(std::string& str){
+void VirtualServerParametrsBuolder::parse_port_and_ip(std::string& str){
     std::string::iterator i = str.begin();
     if (str.find(":") == std::string::npos){
         this->ip_adress = "0.0.0.0";
     }
     else{
-        i = this->set_init_ip(str);    
+        i = this->parse_init_ip(str);    
     }
     if (is_all_digit(str,i) == false )
             throw FileException("wrong port number");
@@ -133,43 +118,43 @@ void VirtualServerParametrsBuolder::set_port_and_ip(std::string& str){
     this->port = temp_port;
 
 }
-void VirtualServerParametrsBuolder::set_root(std::string& str)
+void VirtualServerParametrsBuolder::parse_root(std::string& str)
 {
     if (str.find_first_of(' ') != std::string::npos)
         throw FileException("wrong root");
     this->root = str;
 }
-void VirtualServerParametrsBuolder::set_index(std::string& str)
+void VirtualServerParametrsBuolder::parse_index(std::string& str)
 {
     if (str.find_first_of(' ') != std::string::npos)
         throw FileException("wrong index");
     this->index = str;
 }
-void VirtualServerParametrsBuolder::set_err_page(std::string& str)
+void VirtualServerParametrsBuolder::parse_err_page(std::string& str)
 {
     if (str.find_first_of(' ') != std::string::npos)
         throw FileException("wrong err_page");
     this->error_page = str;
 }
-void VirtualServerParametrsBuolder::set_max_body_size(std::string& str)
+void VirtualServerParametrsBuolder::parse_max_body_size(std::string& str)
 {
     if (is_all_digit(str,str.begin()) == false)
         throw FileException( "wrong max body size");
     this->client_max_body_size = std::atoll(str.c_str());
 }
-void VirtualServerParametrsBuolder::set_upload(std::string& str)
+void VirtualServerParametrsBuolder::parse_upload(std::string& str)
 {
     if (str.find_first_of(' ') != std::string::npos)
         throw FileException( "wrong upload");
     this->upload = str;
 }
-void VirtualServerParametrsBuolder::set_cgi_path(std::string& str)
+void VirtualServerParametrsBuolder::parse_cgi_path(std::string& str)
 {
     if (str.find_first_of(' ') != std::string::npos)
         throw FileException( "wrong cgi_path");
     this->cgi_path = str;
 }
-void VirtualServerParametrsBuolder::set_name(std::string& str)
+void VirtualServerParametrsBuolder::parse_name(std::string& str)
 {
     if (str.find_first_of(' ') != std::string::npos)
         throw FileException( "wrong name");
